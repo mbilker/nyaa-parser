@@ -1,0 +1,22 @@
+{
+  "name": "nyaa-parser",
+  "version": "0.0.1",
+  "description": "Parses nyaa.se RSS feed to download anime torrents",
+  "main": "script.js",
+  "dependencies": {
+    "cli-color": "^1.1.0",
+    "feedparser": "^1.1.4",
+    "iconv": "^2.1.11",
+    "request": "^2.67.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mbilker/nyaa-parser.git"
+  },
+  "author": "Matt Bilker <me@mbilker.us>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mbilker/nyaa-parser/issues"
+  },
+  "homepage": "https://github.com/mbilker/nyaa-parser#readme"
+}
