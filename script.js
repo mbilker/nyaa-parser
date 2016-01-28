@@ -8,7 +8,7 @@ const clc = require('cli-color');
 function checkPost(post) {
   const shows = [
     /Hai to Gensou no Grimgar/i,
-    /Dimension W/i,
+    /DameDesuYo.*Dimension W/i,
     /Boku dake ga Inai Machi/i
   ];
   const testResult = shows.some(regex => regex.test(post.title));
@@ -102,5 +102,6 @@ var server = require('http').createServer((req, res) => {
 });
 server.listen(0, function() {
   fetch('http://localhost:' + server.address().port + '/nyaa.xml');
+  //setImmediate(() => server.close());
 });
 //fetch('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
