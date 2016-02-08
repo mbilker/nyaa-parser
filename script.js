@@ -1,5 +1,6 @@
-'use strict';
+"use strict";
 
+const async = require('async');
 const request = require('request');
 const FeedParser = require('feedparser');
 const Iconv = require('iconv').Iconv;
@@ -7,17 +8,20 @@ const clc = require('cli-color');
 
 function checkPost(post) {
   const shows = [
-    /Hai to Gensou no Grimgar/i,
+    /Hiryuu.*Hai to Gensou no Grimgar/i,
     /DameDesuYo.*Dimension W/i,
-    /Boku dake ga Inai Machi/i
+    /GJM.*Boku dake ga Inai Machi/i,
+    /Mori.*Dagashi Kashi/i
   ];
   const testResult = shows.some(regex => regex.test(post.title));
   const color = testResult ? clc.green('true') : clc.red('false');
 
   console.log(`${color} ${post.title} - ${post.guid}`);
+
+  return testResult;
 }
 
-function fetch(feed) {
+function fetch(feed, cb) {
   // Define our streams
   const req = request(feed, {timeout: 10000, pool: false});
   req.setMaxListeners(50);
@@ -28,7 +32,7 @@ function fetch(feed) {
   const feedparser = new FeedParser();
 
   // Define our handlers
-  req.on('error', done);
+  req.on('error', cb);
   req.on('response', res => {
     if (res.statusCode != 200) {
       return req.emit('error', new Error('Bad status code'));
@@ -40,12 +44,17 @@ function fetch(feed) {
     res.pipe(feedparser);
   });
 
-  feedparser.on('error', done);
-  feedparser.on('end', done);
+  let posts = [];
+  feedparser.on('error', cb);
+  feedparser.on('end', () => {
+    cb(posts);
+  });
   feedparser.on('readable', () => {
     var post;
     while (post = feedparser.read()) {
-      checkPost(post);
+      if (checkPost(post)) {
+        posts.push(post);
+      }
       //console.log(`${post.title} - ${post.link}`);
       //console.log(JSON.stringify(post, ' ', 2));
     }
@@ -83,16 +92,6 @@ function getParams(str) {
   return params;
 }
 
-function done(err) {
-  if (err) {
-    console.log(err);
-    console.error(err.stack);
-    return process.exit(1);
-  }
-  //server.close();
-  process.exit();
-}
-
 // Don't worry about this. It's just a localhost file server so you can be
 // certain the "remote" feed is available when you run this example.
 var server = require('http').createServer((req, res) => {
@@ -101,7 +100,22 @@ var server = require('http').createServer((req, res) => {
   stream.pipe(res);
 });
 server.listen(0, function() {
-  fetch('http://localhost:' + server.address().port + '/nyaa.xml');
-  //setImmediate(() => server.close());
+  //fetch('http://localhost:' + server.address().port + '/nyaa.xml', () => {});
+  setImmediate(() => server.close());
+});
+
+let feeds = [];
+feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
+for (var i = 2; i < 4; i++) {
+  feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2?offset=' + i);
+}
+
+async.concat(feeds, (feed, cb) => {
+  console.log(feed);
+  fetch(feed, cb);
+  //cb();
+}, (err, res) => {
+  console.log(res);
+  console.log(`end:`, err ? err.stack : null);
 });
 //fetch('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
