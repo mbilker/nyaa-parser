@@ -16,7 +16,7 @@ function checkPost(post) {
   const testResult = shows.some(regex => regex.test(post.title));
   const color = testResult ? clc.green('true') : clc.red('false');
 
-  console.log(`${color} ${post.title} - ${post.guid}`);
+  //console.log(`${color} ${post.title} - ${post.guid}`);
 
   return testResult;
 }
@@ -49,15 +49,15 @@ function fetch(feed, cb) {
   feedparser.on('end', () => {
     cb(posts);
   });
-  feedparser.on('readable', () => {
-    var post;
-    while (post = feedparser.read()) {
-      if (checkPost(post)) {
+  feedparser.on('data', (post) => {
+    //var post;
+    //while (post = feedparser.read()) {
+      if (post && checkPost(post)) {
         posts.push(post);
       }
       //console.log(`${post.title} - ${post.link}`);
       //console.log(JSON.stringify(post, ' ', 2));
-    }
+    //}
   });
 }
 
