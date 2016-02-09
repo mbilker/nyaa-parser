@@ -1,5 +1,7 @@
 "use strict";
 
+const fs = require('fs');
+const path = require('path');
 const async = require('async');
 const request = require('request');
 const FeedParser = require('feedparser');
@@ -16,7 +18,7 @@ function checkPost(post) {
   const testResult = shows.some(regex => regex.test(post.title));
   const color = testResult ? clc.green('true') : clc.red('false');
 
-  //console.log(`${color} ${post.title} - ${post.guid}`);
+  console.log(`${color} ${post.title} - ${post.guid}`);
 
   return testResult;
 }
@@ -47,17 +49,18 @@ function fetch(feed, cb) {
   let posts = [];
   feedparser.on('error', cb);
   feedparser.on('end', () => {
-    cb(posts);
+    console.log(`${feed} end event`);
+    cb(null, posts);
   });
-  feedparser.on('data', (post) => {
-    //var post;
-    //while (post = feedparser.read()) {
+  feedparser.on('readable', () => {
+    let post;
+    while (post = feedparser.read()) {
       if (post && checkPost(post)) {
         posts.push(post);
       }
       //console.log(`${post.title} - ${post.link}`);
       //console.log(JSON.stringify(post, ' ', 2));
-    //}
+    }
   });
 }
 
@@ -92,30 +95,45 @@ function getParams(str) {
   return params;
 }
 
+function fetchFeeds(local) {
+  let feeds = [];
+
+  if (local) {
+    let remotePort = server.address().port;
+    for (var i = 1; i < 4; i++) {
+      feeds.push(`http://localhost:${remotePort}/nyaa-${i}.xml`);
+    }
+  } else {
+    feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
+    for (var i = 2; i < 4; i++) {
+      feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2&offset=' + i);
+    }
+  }
+
+  async.concat(feeds, (feed, cb) => {
+    console.log(feed);
+    fetch(feed, cb);
+    //cb();
+  }, (err, res) => {
+    let titles = res.map((obj) => obj.title);
+    console.log(titles);
+    console.log(`end:`, err ? err.stack : null);
+
+    server.close();
+  });
+  //fetch('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
+}
+
 // Don't worry about this. It's just a localhost file server so you can be
 // certain the "remote" feed is available when you run this example.
 var server = require('http').createServer((req, res) => {
-  var stream = require('fs').createReadStream(require('path').resolve(__dirname, 'test-feeds', 'nyaa.xml'));
+  var stream = fs.createReadStream(path.resolve(__dirname, 'test-feeds', path.basename(req.url)));
   res.setHeader('Content-Type', 'text/xml; charset=UTF-8');
   stream.pipe(res);
 });
 server.listen(0, function() {
   //fetch('http://localhost:' + server.address().port + '/nyaa.xml', () => {});
-  setImmediate(() => server.close());
+  fetchFeeds(true);
 });
 
-let feeds = [];
-feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
-for (var i = 2; i < 4; i++) {
-  feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2?offset=' + i);
-}
-
-async.concat(feeds, (feed, cb) => {
-  console.log(feed);
-  fetch(feed, cb);
-  //cb();
-}, (err, res) => {
-  console.log(res);
-  console.log(`end:`, err ? err.stack : null);
-});
-//fetch('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
+//fetchFeeds();
