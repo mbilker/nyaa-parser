@@ -18,7 +18,7 @@ function checkPost(post) {
   const testResult = shows.some(regex => regex.test(post.title));
   const color = testResult ? clc.green('true') : clc.red('false');
 
-  console.log(`${color} ${post.title} - ${post.guid}`);
+  //console.log(`${color} ${post.title} - ${post.guid}`);
 
   return testResult;
 }
@@ -100,23 +100,22 @@ function fetchFeeds(local) {
 
   if (local) {
     let remotePort = server.address().port;
-    for (var i = 1; i < 4; i++) {
+    for (var i = 1; i <= 10; i++) {
       feeds.push(`http://localhost:${remotePort}/nyaa-${i}.xml`);
     }
   } else {
-    feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
-    for (var i = 2; i < 4; i++) {
+    //feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
+    for (var i = 1; i < 4; i++) {
       feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2&offset=' + i);
     }
   }
 
-  async.concat(feeds, (feed, cb) => {
-    console.log(feed);
-    fetch(feed, cb);
-    //cb();
-  }, (err, res) => {
-    let titles = res.map((obj) => obj.title);
+  async.concat(feeds, fetch, (err, res) => {
+    let titles = res.map(obj => obj.title);
+    let regex = titles.map(obj => /\[(.+?)] ([^[]+) - ([0-9a-zA-Z\.]+)/.exec(obj))
+      .map(r => ({ group: r[1], show: r[2], episode: r[3]}));
     console.log(titles);
+    console.log(regex);
     console.log(`end:`, err ? err.stack : null);
 
     server.close();
