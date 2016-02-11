@@ -8,6 +8,10 @@ const FeedParser = require('feedparser');
 const Iconv = require('iconv').Iconv;
 const clc = require('cli-color');
 
+const _ = require('lodash');
+
+const r = /\[(.+?)] ([^[]+) - ([0-9a-zA-Z\.]+)/;
+
 function checkPost(post) {
   const shows = [
     /Hiryuu.*Hai to Gensou no Grimgar/i,
@@ -49,7 +53,6 @@ function fetch(feed, cb) {
   let posts = [];
   feedparser.on('error', cb);
   feedparser.on('end', () => {
-    console.log(`${feed} end event`);
     cb(null, posts);
   });
   feedparser.on('readable', () => {
@@ -95,6 +98,27 @@ function getParams(str) {
   return params;
 }
 
+function tokenizeFilename(text) {
+  const result = r.exec(text);
+  if (!result) {
+    return null;
+  }
+
+  const epWithV = (result[3] || '').split('v');
+  let version = parseInt(epWithV[1]);
+  if (isNaN(version)) {
+    version = undefined;
+  }
+
+  return {
+    originalFilename: text,
+    group: result[1],
+    show: result[2],
+    episode: parseFloat(epWithV[0]),
+    version: version
+  };
+}
+
 function fetchFeeds(local) {
   let feeds = [];
 
@@ -112,8 +136,15 @@ function fetchFeeds(local) {
 
   async.concat(feeds, fetch, (err, res) => {
     let titles = res.map(obj => obj.title);
-    let regex = titles.map(obj => /\[(.+?)] ([^[]+) - ([0-9a-zA-Z\.]+)/.exec(obj))
-      .map(r => ({ group: r[1], show: r[2], episode: r[3]}));
+    let regex = titles.map(tokenizeFilename);
+
+    fs.readFile(path.resolve(__dirname, 'anime_list'), 'utf8', (err, text) => {
+      const alreadyHave = text.trim().split('\n').map(tokenizeFilename);
+
+      const diff = _.differenceWith(regex, alreadyHave, _.isEqual);
+
+      console.log(diff);
+    });
     console.log(titles);
     console.log(regex);
     console.log(`end:`, err ? err.stack : null);

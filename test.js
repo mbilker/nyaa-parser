@@ -11,11 +11,19 @@ const b = fs.readFileSync('./anime_list', 'utf8')
 .split('\n')
 .map(a => {
   const aa = r.exec(a);
+  const epWithV = (aa[3] || '').split('v');
+
+  let version = parseInt(epWithV[1]);
+  if (isNaN(version)) {
+    version = undefined;
+  }
+
   return {
     originalFileName: a,
     groupName: aa[1],
     showName: aa[2],
-    episode: parseInt(aa[3])
+    episode: parseFloat(epWithV[0]),
+    version: version
    };
 });
 
