@@ -181,8 +181,6 @@ var server = require('http').createServer((req, res) => {
   stream.pipe(res);
 });
 server.listen(0, function() {
-  //fetch('http://localhost:' + server.address().port + '/nyaa.xml', () => {});
   fetchFeeds(true);
 });
-
 //fetchFeeds();
