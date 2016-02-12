@@ -38,7 +38,10 @@ function fetch(feed, cb) {
   const feedparser = new FeedParser();
 
   // Define our handlers
-  req.on('error', cb);
+  req.on('error', err => {
+    console.error(`${feed} req error: ${err.stack}`);
+    cb(null, []);
+  });
   req.on('response', res => {
     if (res.statusCode != 200) {
       return req.emit('error', new Error('Bad status code'));
@@ -51,7 +54,10 @@ function fetch(feed, cb) {
   });
 
   let posts = [];
-  feedparser.on('error', cb);
+  feedparser.on('error', err => {
+    console.error(`${feed} parse error: ${err.stack}`);
+    cb(null, []);
+  });
   feedparser.on('end', () => {
     cb(null, posts);
   });
@@ -129,24 +135,37 @@ function fetchFeeds(local) {
     }
   } else {
     //feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2');
-    for (var i = 1; i < 4; i++) {
+    for (var i = 1; i < 10; i++) {
       feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2&offset=' + i);
     }
   }
 
   async.concat(feeds, fetch, (err, res) => {
-    let titles = res.map(obj => obj.title);
-    let regex = titles.map(tokenizeFilename);
+    const titles = res.map(obj => obj.title);
+    const links = res.map(obj => obj.link);
+    const regex = titles.map(tokenizeFilename);
 
     fs.readFile(path.resolve(__dirname, 'anime_list'), 'utf8', (err, text) => {
       const alreadyHave = text.trim().split('\n').map(tokenizeFilename);
-
       const diff = _.differenceWith(regex, alreadyHave, _.isEqual);
 
-      console.log(diff);
+      const withLinks = diff.map(obj => {
+        const index = regex.indexOf(obj);
+
+        if (index === -1) {
+          return new Error('why couldn\' we find the object in the original array!');
+        }
+
+        const original = regex[index];
+
+        return Object.assign({}, obj, { link: links[index] });;
+      });
+
+      //console.log(diff);
+      console.log(withLinks);
     });
-    console.log(titles);
-    console.log(regex);
+    //console.log(titles);
+    //console.log(regex);
     console.log(`end:`, err ? err.stack : null);
 
     server.close();
