@@ -17,7 +17,8 @@ function checkPost(post) {
     /Hiryuu.*Hai to Gensou no Grimgar/i,
     /DameDesuYo.*Dimension W/i,
     /GJM.*Boku dake ga Inai Machi/i,
-    /Mori.*Dagashi Kashi/i
+    /Mori.*Dagashi Kashi/i,
+    /Commie.*Schwarzesmarken - (?:0[4-9]|[1-2][0-9])/i
   ];
   const testResult = shows.some(regex => regex.test(post.title));
   const color = testResult ? clc.green('true') : clc.red('false');
