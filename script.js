@@ -164,7 +164,7 @@ function fetchFeeds(local) {
       //console.log(diff);
       console.log(withLinks);
     });
-    //console.log(titles);
+    console.log(titles);
     //console.log(regex);
     console.log(`end:`, err ? err.stack : null);
 
