@@ -181,6 +181,6 @@ var server = require('http').createServer((req, res) => {
   stream.pipe(res);
 });
 server.listen(0, function() {
-  fetchFeeds(true);
+  //fetchFeeds(true);
 });
-//fetchFeeds();
+fetchFeeds();
