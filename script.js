@@ -9,7 +9,7 @@ const Iconv = require('iconv').Iconv;
 const clc = require('cli-color');
 
 const _ = require('lodash');
-const Rtorrent = require('node-rtorrent');
+const rtorrent = require('node-rtorrent-scgi');
 
 const r = /\[(.+?)] ([^[]+) - ([0-9a-zA-Z\.]+)/;
 
@@ -129,7 +129,7 @@ function tokenizeFilename(text) {
 
 function addTorrent(rt, link) {
   return new Promise((resolve, reject) => {
-    rt.loadLink(link, (err, data) => {
+    rt.SendCall('load_start', link, (err, data) => {
       if (err) {
         reject(err);
       } else {
@@ -141,7 +141,7 @@ function addTorrent(rt, link) {
 
 function fetchFeeds(local) {
   let feeds = [];
-  let rtorrent = { loadLink: () => {} };
+  let torrent = { SendCall: (method, link, cb) => cb(null) };
 
   if (local) {
     let remotePort = server.address().port;
@@ -154,12 +154,7 @@ function fetchFeeds(local) {
       feeds.push('http://www.nyaa.se/?page=rss&cats=1_37&filter=2&offset=' + i);
     }
 
-    rtorrent = new Rtorrent({
-      mode: 'xmlrpc',
-      host: 'rutorrent.h.mbilker.us',
-      port: 80,
-      path: '/RPC2'
-    });
+    torrent = rtorrent({ host: 'localhost', port: 5000 });
   }
 
   async.concat(feeds, fetch, (err, res) => {
@@ -187,16 +182,13 @@ function fetchFeeds(local) {
       console.log(withLinks);
 
       const promises = withLinks.map((obj) => {
-        return addTorrent(rtorrent, obj.link);
+        return addTorrent(torrent, obj.link);
       });
 
       Promise.all(promises).then((responses) => {
         console.log(responses);
       }).catch((err) => {
         console.log(err);
-        console.log(err.req && err.req._header);
-        console.log(err.res && err.res.statusCode);
-        console.log(err.body);
       });
     });
     console.log(titles);
